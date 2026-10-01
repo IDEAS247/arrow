@@ -1053,18 +1053,18 @@ class Arrow:
         calendar_kwargs = {k: v for k, v in relative_kwargs.items() if k in CALENDAR_ATTRS}
         duration_kwargs = {k: v for k, v in relative_kwargs.items() if k in DURATION_ATTRS}
 
-        # step 1: apply the calendar-based shifts on the wall-clock (local) time
         current = self._datetime + relativedelta(**calendar_kwargs)
+
+        if duration_kwargs and check_imaginary:
+            utc_current = current.astimezone(dateutil_tz.UTC)
+            utc_current = utc_current + timedelta(**duration_kwargs)
+            current = utc_current.astimezone(current.tzinfo)
+        else:
+            current = current + timedelta(**duration_kwargs)
 
         if check_imaginary and not dateutil_tz.datetime_exists(current):
             current = dateutil_tz.resolve_imaginary(current)
 
-        # step 2: apply the duration-based shifts on theabsolute instant (UTC)
-        # so hours/munites/seconds represent real elapsed time across DST changes
-        if duration_kwargs:
-            utc_current = current.astimezone(dateutil_tz.UTC)
-            utc_current = utc_current + timedelta(**duration_kwargs)
-            current = utc_current.astimezone(current.tzinfo)
         return self.fromdatetime(current)
 
     def to(self, tz: TZ_EXPR) -> "Arrow":
